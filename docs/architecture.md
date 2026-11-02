@@ -3,7 +3,7 @@
 ```mermaid
 flowchart TB
     SRC[Northstar JSON records] --> MAP[Northstar mapping adapter]
-    ONT[Northstar OWL ontology] --> SHACL[Ontology and SHACL validation]
+    ONT[Northstar OWL ontology] --> MAP
     MAP --> KG[Semantica GraphBuilder]
     KG --> TEMP[Semantica TemporalGraphQuery]
     TEMP --> DATALOG[Semantica DatalogReasoner]
@@ -12,8 +12,6 @@ flowchart TB
     EXPLAIN --> RESP[Decision and evidence]
     CALLER[Caller: person + document + as-of] --> TEMP
     CALLER --> REASON
-    ONT --> MAP
-    SHACL -. validates mapped graph .-> KG
 
     classDef sem fill:#e8f3ff,stroke:#3973ac,color:#16324f
     class KG,TEMP,DATALOG,REASON,EXPLAIN sem
