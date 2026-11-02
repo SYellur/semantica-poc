@@ -1,16 +1,10 @@
 # Semantica Northstar Authorization POC
 
-A runnable proof of concept for time-aware document authorization using Semantica and a Northstar sample domain.
+A learning proof of concept for time-aware document authorization using Semantica and a Northstar sample domain.
 
-The POC demonstrates:
-- ontology modelling, including reified associations when a relationship has its own attributes;
-- mapping structured source records into a knowledge graph;
-- point-in-time graph queries for time-bounded direct shares and restrictions;
-- recursive team ancestry and project reachability with Datalog;
-- authorization policy evaluation and explanation hooks;
-- small deterministic tests that do not call an LLM.
+The POC demonstrates ontology modelling, explicit source-to-KG mapping, temporal graph snapshots, recursive team/project reachability, authorization inference, and validation against a curated Turtle ontology.
 
-> **Important:** This is a learning/demo implementation, not a production authorization service. Do not use it as the only control protecting real documents.
+> **Scope:** this is a learning/demo implementation, not a production authorization service. Do not use it as the only control protecting real documents.
 
 ## Quick start
 
@@ -24,117 +18,71 @@ pytest -q
 python -m northstar_authz --person Alice --as-of 2026-11-01T12:00:00Z
 ```
 
-The default CLI runs a deterministic reference evaluator, so no LLM key or model service is needed.
+The default CLI runs the deterministic reference evaluator and needs no LLM credentials.
 
-## Guided notebooks
+## Two guided notebooks
 
-The `notebooks/` folder contains three short walkthroughs. From the repository root, install Jupyter and launch it:
+Install Jupyter and launch from the repository root:
 
 ```bash
 pip install jupyter
 jupyter notebook
 ```
 
-Run the notebooks in this order:
+1. [01 — SAP AI Core ontology generation](notebooks/01_sap_ai_core_ontology_generation.ipynb): call SAP AI Core through LiteLLM and Semantica's `LLMOntologyGenerator` / `OWLGenerator` to generate a schema **proposal**.
+2. [02 — Curated ontology, mapping, temporal KG and reasoning](notebooks/02_curated_ontology_kg_and_reasoning.ipynb): use the reviewed Turtle ontology, explicitly map source records, build a KG with Semantica, query a temporal snapshot, and run Semantica reasoning.
 
-1. [01 — Data and ontology](notebooks/01_data_and_ontology.ipynb): load the Northstar JSON, inspect a document, read the curated Turtle ontology, and see the optional ontology-generation entry point.
-2. [02 — Knowledge graph](notebooks/02_knowledge_graph.ipynb): follow `load_data()` → `source_to_kg()` → Semantica `GraphBuilder`.
-3. [03 — Temporal reasoning and authorization](notebooks/03_temporal_reasoning_and_authorization.ipynb): inspect a temporal snapshot and run the Semantica-backed authorization path using `DatalogReasoner`, `Reasoner`, and `ExplanationGenerator`.
+The notebooks are separate by design. A generated ontology does not update the source-to-KG mapper automatically.
 
-The notebooks call the project's existing functions and classes rather than duplicating the implementation. Run them with the project environment active and from the repository root.
+## SAP AI Core configuration
 
-## Semantica integration from Python
+Set these environment variables before running notebook 01. Keep credentials out of notebooks, source control, and logs.
 
-```python
-from datetime import datetime, timezone
-from northstar_authz.service import load_data
-from northstar_authz.semantica_pipeline import evaluate_with_semantica
-
-data = load_data()
-result = evaluate_with_semantica(
-    data,
-    person_id="Alice",
-    document_id="DOC-101",
-    as_of=datetime(2026, 11, 1, 12, tzinfo=timezone.utc),
-)
-print(result.allowed, result.explanation)
+```bash
+export AICORE_SERVICE_KEY='{"clientid":"...","clientsecret":"...","url":"https://<tenant>.authentication.sap.hana.ondemand.com","serviceurls":{"AI_API_URL":"https://api.ai.<region>.aws.ml.hana.ondemand.com"}}'
+export AICORE_RESOURCE_GROUP="default"
 ```
 
-The Semantica path uses public documented APIs: `GraphBuilder`, `TemporalGraphQuery`, `DatalogReasoner`, `Reasoner`, and `ExplanationGenerator`. It is kept separate from the deterministic fallback so individual layers can be understood and tested.
+The model defaults to `sap/gpt-4o`. Confirm that the corresponding model/deployment is available in your SAP AI Core account. LiteLLM handles provider authentication; this POC does not implement OAuth or raw HTTP transport.
 
-## Layout
+## Architecture
 
-```text
-.
-├── data/northstar.json
-├── docs/
-│   ├── architecture.md
-│   ├── sequence.md
-│   ├── activity.md
-│   └── decisions/
-├── notebooks/
-│   ├── 01_data_and_ontology.ipynb
-│   ├── 02_knowledge_graph.ipynb
-│   └── 03_temporal_reasoning_and_authorization.ipynb
-├── ontology/northstar.ttl
-├── northstar_authz/
-│   ├── adapter.py
-│   ├── policy.py
-│   ├── service.py
-│   └── semantica_pipeline.py
-├── tests/
-├── .github/workflows/tests.yml
-└── pyproject.toml
+- **Semantica:** `LLMOntologyGenerator` and `OWLGenerator` for design-time schema proposals; `GraphBuilder`, `TemporalGraphQuery`, `DatalogReasoner`, `Reasoner`, and `ExplanationGenerator` in the runtime reasoning path.
+- **Northstar adapter:** the small domain-specific component that maps source JSON into graph entities/edges and performs the temporal projection required by the current temporal query path.
+- **Curated ontology:** `ontology/northstar.ttl` is the reviewed runtime schema. Generated Turtle under `generated/` is proposal-only.
+
+## Why the mapper must change with the ontology
+
+The ontology describes domain concepts and relationships. It does not specify how every JSON record is transformed into a KG entity or relationship. When classes, properties, domains/ranges, or temporal modelling change, the adapter and its validation contract may need corresponding changes.
+
+A stale mapper can omit source records or emit incorrectly typed graph relationships. The migration gate therefore checks ontology declarations, property domains/ranges, endpoint existence, expected source-to-entity/edge counts, and temporal date projection. These checks catch configured mapping failures; they do not prove domain semantics or authorization policy correctness.
+
+Run the checks with:
+
+```bash
+python -c "from northstar_authz.service import load_data; from northstar_authz.ontology_validation import assert_ontology_mapping_valid; assert_ontology_mapping_valid(load_data())"
+pytest -q
 ```
 
-## Authorization semantics
+For candidate ontology changes, run `northstar_authz.ontology_diff.diff_ontologies(old, new)`, review mapper impact, update mapper and validator together, add regression tests, and require human approval before adopting the Turtle. See [validation](docs/ontology-validation.md), [ADR-002](docs/decisions/0002-sap-ai-core-and-temporal-ontology-contract.md), and the [ontology-migration Claude skill](.claude/skills/ontology-migration/SKILL.md).
 
-A person can reach a document through:
-1. team membership → parent team(s) → project owning team → documents in that project;
-2. direct project assignment; or
-3. an active direct document share.
+## Temporal support: current workaround and upstream requirement
 
-Confidential documents require Confidential clearance. An active person/document restriction overrides all allow routes. The sample policy assumes direct shares do **not** bypass classification clearance.
+The POC calls Semantica's `TemporalGraphQuery` using edge-level `valid_from` / `valid_until` fields. In the curated ontology, the corresponding dates belong to reified association individuals, so the adapter projects them onto graph edges.
 
-All validity windows are half-open: `valid_from <= as_of < valid_until`. Missing `valid_until` means open-ended.
+The desired behavior is temporal querying directly over temporal properties on reified associations. This POC has not demonstrated that as an out-of-the-box Semantica capability. Record it as an upstream capability question/requirement until Semantica maintainers clarify whether it is supported, intentionally out of scope, or a defect. See [temporal support requirement](docs/temporal-support-requirement.md).
 
-Expected sample outcomes on **2026-11-01**:
-- Alice inherits API → Platform → Engineering and can reach Phoenix and Orion.
-- Alice can access DOC-101, DOC-103, DOC-106, DOC-107.
-- Alice is denied DOC-102 because her active restriction overrides her team route and clearance.
-- Ethan's share to DOC-107 is active on 2026-10-27 and expired from 2026-10-28 onward.
-- Farah's share to confidential DOC-104 does not grant access because she has no Confidential clearance.
+## Main files
 
-## Why there is a small custom adapter
-
-The ontology correctly represents a time-bounded share or restriction as a reified association individual, with dates stored as properties of that individual. Semantica's documented temporal KG query API works with `valid_from` / `valid_until` on graph relationships. `adapter.py` performs this Northstar-specific projection when constructing graph input. Ontology generation by itself does not define this source-to-KG transformation.
-
-This is intentionally a narrow adapter, not a custom reasoning engine. Semantica remains responsible for graph construction, temporal querying, recursive inference, policy inference, and explanation in the integration path.
-
-## Ontology generation
-
-An optional proposal-generation script uses Semantica's native `LLMOntologyGenerator` and `OWLGenerator`. It writes a proposed Turtle file under `generated/` and does not overwrite the curated ontology. See [ontology generation](docs/ontology-generation.md). The native generator proposes classes and properties; Northstar source-to-KG mapping remains in the small adapter.
-
-## Diagrams
-
-The diagrams distinguish Semantica-provided capabilities from the Northstar-specific adapter and policy.
-
-- [High-level architecture](docs/architecture.md) — design-time ontology generation and runtime component map.
-- [Request sequence](docs/sequence.md) — which component is called, and in what order, for one access request.
-- [Authorization activity](docs/activity.md) — the decision flow from temporal snapshot through recursive reachability and policy evaluation.
-
-In the diagrams, **blue** denotes Semantica components, **amber** denotes Northstar-specific preparation, and **purple** denotes returned decisions.
-
-## Architecture decision records
-
-- [ADR-001: Keep ontology generation and KG mapping separate](docs/decisions/0001-ontology-generation-and-kg-mapping.md) — explains why the POC uses a reviewed ontology and an explicit adapter, with the trade-offs and conditions for a more dynamic mapping approach.
+- `ontology/northstar.ttl` — curated runtime ontology.
+- `northstar_authz/ontology_generation.py` — Semantica ontology generator/exporter with SAP AI Core LiteLLM adapter.
+- `northstar_authz/adapter.py` — explicit Northstar source-to-KG mapping and temporal projection.
+- `northstar_authz/ontology_validation.py` — mapping completeness and ontology contract checks.
+- `northstar_authz/semantica_pipeline.py` — Semantica temporal/reasoning pipeline.
+- `docs/decisions/0002-sap-ai-core-and-temporal-ontology-contract.md` — architecture decision.
 
 ## References
 
-The implementation is based on the public Semantica documentation:
-- [Ontology module](https://github.com/semantica-agi/semantica/blob/main/docs/reference/ontology.md)
-- [Knowledge graph module](https://github.com/semantica-agi/semantica/blob/main/docs/reference/kg.md)
-- [Reasoning module](https://github.com/semantica-agi/semantica/blob/main/docs/reference/reasoning.md)
-- [Module overview](https://github.com/semantica-agi/semantica/blob/main/docs/modules.md)
-
-The CI suite covers domain policy, adapter integrity, ontology parsing, the Semantica KG/temporal/reasoning path, and ontology-prompt constraints. The integration tests do not require an LLM provider. The optional ontology proposal command does require provider credentials.
+- [Semantica ontology module](https://github.com/semantica-agi/semantica/blob/main/docs/reference/ontology.md)
+- [Semantica knowledge graph module](https://github.com/semantica-agi/semantica/blob/main/docs/reference/kg.md)
+- [Semantica reasoning module](https://github.com/semantica-agi/semantica/blob/main/docs/reference/reasoning.md)
