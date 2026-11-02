@@ -16,7 +16,7 @@ def test_adapter_projects_share_dates_onto_kg_edge_fields():
     share = next(
         edge for edge in graph_input["relationships"]
         if edge["source"] == "Ethan" and edge["target"] == "DOC-107"
-        and edge["type"] == "DIRECT_SHARE"
+        and edge["type"] == "directShareTo"
     )
     assert share["valid_from"] == "2026-10-20T00:00:00Z"
     assert share["valid_until"] == "2026-10-28T00:00:00Z"
@@ -27,7 +27,7 @@ def test_adapter_projects_open_ended_restriction():
     restriction = next(
         edge for edge in graph_input["relationships"]
         if edge["source"] == "Alice" and edge["target"] == "DOC-102"
-        and edge["type"] == "RESTRICTED_FROM"
+        and edge["type"] == "restrictedFrom"
     )
     assert restriction["valid_from"] == "2026-10-25T00:00:00Z"
     assert restriction["valid_until"] is None

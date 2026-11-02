@@ -49,13 +49,13 @@ def evaluate_with_semantica(
         source = _datalog_term(edge.get("source", ""))
         target = _datalog_term(edge.get("target", ""))
         relation = edge.get("type")
-        if relation == "MEMBER_OF":
+        if relation == "memberOf":
             datalog.add_fact(f"membership({source}, {target})")
-        elif relation == "PARENT_TEAM":
+        elif relation == "hasParentTeam":
             datalog.add_fact(f"parent_team({source}, {target})")
-        elif relation == "OWNS_PROJECT":
+        elif relation == "ownsProjectEdge":
             datalog.add_fact(f"owns_project({source}, {target})")
-        elif relation == "ASSIGNED_TO":
+        elif relation == "assignedTo":
             datalog.add_fact(f"assigned({source}, {target})")
 
     datalog.add_rule("team_access(P, T) :- membership(P, T).")
@@ -83,11 +83,11 @@ def evaluate_with_semantica(
     # direct shares and restrictions. It filters valid_from/valid_until edges.
     active_share_pairs = {
         (edge.get("source"), edge.get("target"))
-        for edge in snapshot_edges if edge.get("type") == "DIRECT_SHARE"
+        for edge in snapshot_edges if edge.get("type") == "directShareTo"
     }
     active_restriction_pairs = {
         (edge.get("source"), edge.get("target"))
-        for edge in snapshot_edges if edge.get("type") == "RESTRICTED_FROM"
+        for edge in snapshot_edges if edge.get("type") == "restrictedFrom"
     }
 
     reasoner = Reasoner()

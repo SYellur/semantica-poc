@@ -49,26 +49,26 @@ def source_to_kg(data: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
         add_entity("ClearanceLevel", level, name=level)
     for item in data["projects"]:
         add_entity("Project", item["id"], name=item["name"])
-        add_edge(item["owning_team"], item["id"], "OWNS_PROJECT")
+        add_edge(item["owning_team"], item["id"], "ownsProjectEdge")
     for item in data["documents"]:
         add_entity("Document", item["id"], classification=item["classification"])
-        add_edge(item["project_id"], item["id"], "HAS_DOCUMENT")
+        add_edge(item["project_id"], item["id"], "hasDocument")
     for item in data["team_memberships"]:
-        add_edge(item["person_id"], item["team_id"], "MEMBER_OF")
+        add_edge(item["person_id"], item["team_id"], "memberOf")
     for item in data["team_hierarchy"]:
-        add_edge(item["child_team_id"], item["parent_team_id"], "PARENT_TEAM")
+        add_edge(item["child_team_id"], item["parent_team_id"], "hasParentTeam")
     for item in data["project_assignments"]:
-        add_edge(item["person_id"], item["project_id"], "ASSIGNED_TO")
+        add_edge(item["person_id"], item["project_id"], "assignedTo")
     for item in data["clearances"]:
-        add_edge(item["person_id"], item["level"], "HAS_CLEARANCE")
+        add_edge(item["person_id"], item["level"], "hasClearance")
     for item in data["direct_shares"]:
         add_edge(
-            item["person_id"], item["document_id"], "DIRECT_SHARE",
+            item["person_id"], item["document_id"], "directShareTo",
             valid_from=item.get("valid_from"), valid_until=item.get("valid_until"),
         )
     for item in data["restrictions"]:
         add_edge(
-            item["person_id"], item["document_id"], "RESTRICTED_FROM",
+            item["person_id"], item["document_id"], "restrictedFrom",
             valid_from=item.get("effective_from"), valid_until=None,
         )
 
