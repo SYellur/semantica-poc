@@ -91,6 +91,10 @@ The ontology correctly represents a time-bounded share or restriction as a reifi
 
 This is intentionally a narrow adapter, not a custom reasoning engine. Semantica remains responsible for graph construction, temporal querying, recursive inference, policy inference, and explanation in the integration path.
 
+## Ontology generation
+
+An optional proposal-generation script uses Semantica's native `LLMOntologyGenerator` and `OWLGenerator`. It writes a proposed Turtle file under `generated/` and does not overwrite the curated ontology. See [ontology generation](docs/ontology-generation.md). The native generator proposes classes and properties; Northstar source-to-KG mapping remains in the small adapter.
+
 ## Diagrams
 
 - [High-level architecture](docs/architecture.md)
