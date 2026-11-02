@@ -60,3 +60,22 @@ ns:validUntil a owl:DatatypeProperty ;
     rdfs:domain ns:DirectDocumentShare ; rdfs:range xsd:dateTime .
 ns:effectiveFrom a owl:DatatypeProperty ;
     rdfs:domain ns:DocumentRestriction ; rdfs:range xsd:dateTime .
+
+# Direct KG projection properties emitted by the Northstar adapter. The
+# association classes above remain the qualified source-domain model.
+ns:memberOf a owl:ObjectProperty ;
+    rdfs:domain ns:Person ; rdfs:range ns:Team .
+ns:hasParentTeam a owl:ObjectProperty ;
+    rdfs:domain ns:Team ; rdfs:range ns:Team .
+ns:assignedTo a owl:ObjectProperty ;
+    rdfs:domain ns:Person ; rdfs:range ns:Project .
+ns:hasClearance a owl:ObjectProperty ;
+    rdfs:domain ns:Person ; rdfs:range ns:ClearanceLevel .
+ns:directShareTo a owl:ObjectProperty ;
+    rdfs:domain ns:Person ; rdfs:range ns:Document .
+ns:restrictedFrom a owl:ObjectProperty ;
+    rdfs:domain ns:Person ; rdfs:range ns:Document .
+ns:ownsProjectEdge a owl:ObjectProperty ;
+    rdfs:domain ns:Team ; rdfs:range ns:Project .
+ns:hasDocument a owl:ObjectProperty ;
+    rdfs:domain ns:Project ; rdfs:range ns:Document .
