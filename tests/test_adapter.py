@@ -31,3 +31,11 @@ def test_adapter_projects_open_ended_restriction():
     )
     assert restriction["valid_from"] == "2026-10-25T00:00:00Z"
     assert restriction["valid_until"] is None
+
+
+def test_all_mapped_relationship_endpoints_exist_as_entities():
+    graph_input = source_to_kg(load_data())
+    entity_ids = {entity["id"] for entity in graph_input["entities"]}
+    for edge in graph_input["relationships"]:
+        assert edge["source"] in entity_ids
+        assert edge["target"] in entity_ids
