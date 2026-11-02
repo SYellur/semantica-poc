@@ -1,8 +1,8 @@
 """Semantica-backed Northstar decision path.
 
-Uses Datalog for recursive reachability and Reasoner for allow inference.
-The deny-overrides rule is made explicit by withholding NoActiveRestriction
-facts for pairs that have an active restriction at the requested instant.
+Uses TemporalGraphQuery for time filtering, Datalog for recursive reachability,
+and Reasoner for allow inference. Deny-overrides is represented explicitly by
+withholding NoActiveRestriction facts for pairs with a live restriction.
 """
 from __future__ import annotations
 
@@ -11,7 +11,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from .adapter import is_active
 from .service import build_graph, temporal_snapshot
 
 
@@ -22,40 +21,42 @@ class SemanticaDecision:
     snapshot: dict[str, Any]
 
 
+def _term(value: str) -> str:
+    """Convert a source identifier into a safe predicate argument."""
+    result = re.sub(r"[^a-zA-Z0-9_]", "_", value)
+    if not result or result[0].isdigit():
+        result = "v_" + result
+    return result
+
+
 def _datalog_term(value: str) -> str:
-    term = re.sub(r"[^a-zA-Z0-9_]", "_", value).lower()
-    if not term or term[0].isdigit():
-        term = "v_" + term
-    return term
+    return _term(value).lower()
 
 
 def evaluate_with_semantica(
     data: dict[str, Any], person_id: str, document_id: str, as_of: datetime
 ) -> SemanticaDecision:
-    """Run temporal KG query, Datalog reachability and policy inference."""
+    """Run time filtering, recursive project reachability and policy inference."""
     from semantica.reasoning import DatalogReasoner, ExplanationGenerator, Reasoner
 
     graph = build_graph(data)
     snapshot = temporal_snapshot(graph, as_of)
+    snapshot_edges = snapshot.get("relationships", [])
 
-    # Recursive graph reachability: direct membership plus parent-team closure.
+    # Load the static relations from the point-in-time KG into Datalog.
     datalog = DatalogReasoner()
-    for row in data["team_memberships"]:
-        datalog.add_fact(
-            f"membership({_datalog_term(row['person_id'])}, {_datalog_term(row['team_id'])})"
-        )
-    for row in data["team_hierarchy"]:
-        datalog.add_fact(
-            f"parent_team({_datalog_term(row['child_team_id'])}, {_datalog_term(row['parent_team_id'])})"
-        )
-    for row in data["projects"]:
-        datalog.add_fact(
-            f"owns_project({_datalog_term(row['owning_team'])}, {_datalog_term(row['id'])})"
-        )
-    for row in data["project_assignments"]:
-        datalog.add_fact(
-            f"assigned({_datalog_term(row['person_id'])}, {_datalog_term(row['project_id'])})"
-        )
+    for edge in snapshot_edges:
+        source = _datalog_term(edge.get("source", ""))
+        target = _datalog_term(edge.get("target", ""))
+        relation = edge.get("type")
+        if relation == "MEMBER_OF":
+            datalog.add_fact(f"membership({source}, {target})")
+        elif relation == "PARENT_TEAM":
+            datalog.add_fact(f"parent_team({source}, {target})")
+        elif relation == "OWNS_PROJECT":
+            datalog.add_fact(f"owns_project({source}, {target})")
+        elif relation == "ASSIGNED_TO":
+            datalog.add_fact(f"assigned({source}, {target})")
 
     datalog.add_rule("team_access(P, T) :- membership(P, T).")
     datalog.add_rule(
@@ -78,38 +79,45 @@ def evaluate_with_semantica(
         for row in project_rows
     }
 
-    # Temporal edges are also filtered by TemporalGraphQuery; these checks make
-    # the exact sample policy explicit and prepare the Reasoner facts.
-    active_shares = [
-        row for row in data["direct_shares"]
-        if is_active(row.get("valid_from"), row.get("valid_until"), as_of)
-    ]
-    active_restrictions = [
-        row for row in data["restrictions"]
-        if is_active(row.get("effective_from"), None, as_of)
-    ]
+    # Use the TemporalGraphQuery snapshot as the source of truth for active
+    # direct shares and restrictions. It filters valid_from/valid_until edges.
+    active_share_pairs = {
+        (edge.get("source"), edge.get("target"))
+        for edge in snapshot_edges if edge.get("type") == "DIRECT_SHARE"
+    }
+    active_restriction_pairs = {
+        (edge.get("source"), edge.get("target"))
+        for edge in snapshot_edges if edge.get("type") == "RESTRICTED_FROM"
+    }
 
     reasoner = Reasoner()
-    person_terms = {person_id}
     for project in projects:
-        reasoner.add_fact(f"ProjectAccess({person_id}, {project})")
-
+        reasoner.add_fact(
+            f"ProjectAccess({_term(person_id)}, {_term(project)})"
+        )
     for doc in data["documents"]:
-        reasoner.add_fact(f"DocumentInProject({doc['id']}, {doc['project_id']})")
-        reasoner.add_fact(f"DocumentClassification({doc['id']}, {doc['classification']})")
-
+        reasoner.add_fact(
+            f"DocumentInProject({_term(doc['id'])}, {_term(doc['project_id'])})"
+        )
+        reasoner.add_fact(
+            f"DocumentClassification({_term(doc['id'])}, {_term(doc['classification'])})"
+        )
     for row in data["clearances"]:
-        reasoner.add_fact(f"HasClearance({row['person_id']}, {row['level']})")
-    for row in active_shares:
-        reasoner.add_fact(f"ActiveDirectShare({row['person_id']}, {row['document_id']})")
+        reasoner.add_fact(
+            f"HasClearance({_term(row['person_id'])}, {_term(row['level'])})"
+        )
+    for share_person, share_document in active_share_pairs:
+        reasoner.add_fact(
+            f"ActiveDirectShare({_term(share_person)}, {_term(share_document)})"
+        )
 
-    restricted_pairs = {
-        (row["person_id"], row["document_id"]) for row in active_restrictions
-    }
+    # Add negative-condition facts only when there is no active restriction.
     for doc in data["documents"]:
         pair = (person_id, doc["id"])
-        if pair not in restricted_pairs:
-            reasoner.add_fact(f"NoActiveRestriction({person_id}, {doc['id']})")
+        if pair not in active_restriction_pairs:
+            reasoner.add_fact(
+                f"NoActiveRestriction({_term(person_id)}, {_term(doc['id'])})"
+            )
 
     reasoner.add_rule(
         "IF NoActiveRestriction(?p, ?d) AND ProjectAccess(?p, ?project) "
@@ -132,16 +140,17 @@ def evaluate_with_semantica(
     )
 
     results = reasoner.forward_chain()
-    target = f"Allow({person_id}, {document_id})"
-    matched = next((item for item in results if item.conclusion == target), None)
+    target = f"Allow({_term(person_id)}, {_term(document_id)})"
+    matched = next(
+        (item for item in results if item.conclusion == target), None
+    )
     if matched is None:
-        if (person_id, document_id) in restricted_pairs:
-            explanation = "DENY: active restriction overrides all allow routes."
+        if (person_id, document_id) in active_restriction_pairs:
+            explanation = "DENY: an active restriction overrides every allow route."
         else:
             explanation = "DENY: no qualifying route and clearance combination was inferred."
         return SemanticaDecision(False, explanation, snapshot)
 
-    explanation_generator = ExplanationGenerator()
-    detail = explanation_generator.generate_explanation(matched)
-    explanation = getattr(detail, "natural_language", None) or str(detail)
+    details = ExplanationGenerator().generate_explanation(matched)
+    explanation = getattr(details, "natural_language", None) or str(details)
     return SemanticaDecision(True, explanation, snapshot)
