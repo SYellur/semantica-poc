@@ -48,6 +48,22 @@ def validate_ontology_mapping(
         if (NS[entity_type], RDF.type, OWL.Class) not in graph:
             errors.append(f"KG entity type {entity_type!r} is not declared as an owl:Class")
 
+    entity_counts = Counter(entity["type"] for entity in graph_input["entities"])
+    expected_entity_counts = {
+        "Person": len(data["people"]),
+        "Team": len(data["teams"]),
+        "Project": len(data["projects"]),
+        "Document": len(data["documents"]),
+        "ClearanceLevel": len({row["level"] for row in data["clearances"]}),
+    }
+    for entity_type, expected in expected_entity_counts.items():
+        actual = entity_counts[entity_type]
+        if actual != expected:
+            errors.append(
+                f"Entity mapping coverage for {entity_type}: expected {expected} "
+                f"entities from source records, got {actual}"
+            )
+
     counts = Counter(edge["type"] for edge in graph_input["relationships"])
     for predicate, expected_fn in EXPECTED_EDGE_COUNTS.items():
         expected = expected_fn(data)
