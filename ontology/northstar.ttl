@@ -1,0 +1,62 @@
+@prefix ns:   <https://example.org/northstar#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+<https://example.org/northstar> a owl:Ontology ;
+    rdfs:label "Northstar Authorization Ontology" .
+
+# Core domain classes
+ns:Person a owl:Class .
+ns:Team a owl:Class .
+ns:Project a owl:Class .
+ns:Document a owl:Class .
+ns:ClearanceLevel a owl:Class .
+
+# Reified association classes: each represents a relationship with its own attributes
+ns:TeamMembership a owl:Class .
+ns:ProjectAssignment a owl:Class .
+ns:Clearance a owl:Class .
+ns:DirectDocumentShare a owl:Class .
+ns:DocumentRestriction a owl:Class .
+
+# Core object properties
+ns:owningTeam a owl:ObjectProperty ;
+    rdfs:domain ns:Project ; rdfs:range ns:Team .
+ns:belongsToProject a owl:ObjectProperty ;
+    rdfs:domain ns:Document ; rdfs:range ns:Project .
+ns:memberPerson a owl:ObjectProperty ;
+    rdfs:domain ns:TeamMembership ; rdfs:range ns:Person .
+ns:memberTeam a owl:ObjectProperty ;
+    rdfs:domain ns:TeamMembership ; rdfs:range ns:Team .
+ns:assignedPerson a owl:ObjectProperty ;
+    rdfs:domain ns:ProjectAssignment ; rdfs:range ns:Person .
+ns:assignedProject a owl:ObjectProperty ;
+    rdfs:domain ns:ProjectAssignment ; rdfs:range ns:Project .
+ns:clearedPerson a owl:ObjectProperty ;
+    rdfs:domain ns:Clearance ; rdfs:range ns:Person .
+ns:clearanceLevel a owl:ObjectProperty ;
+    rdfs:domain ns:Clearance ; rdfs:range ns:ClearanceLevel .
+ns:sharePerson a owl:ObjectProperty ;
+    rdfs:domain ns:DirectDocumentShare ; rdfs:range ns:Person .
+ns:sharedDocument a owl:ObjectProperty ;
+    rdfs:domain ns:DirectDocumentShare ; rdfs:range ns:Document .
+ns:restrictedPerson a owl:ObjectProperty ;
+    rdfs:domain ns:DocumentRestriction ; rdfs:range ns:Person .
+ns:restrictedDocument a owl:ObjectProperty ;
+    rdfs:domain ns:DocumentRestriction ; rdfs:range ns:Document .
+ns:childTeam a owl:ObjectProperty ;
+    rdfs:domain ns:Team ; rdfs:range ns:Team .
+ns:parentTeam a owl:ObjectProperty ;
+    rdfs:domain ns:Team ; rdfs:range ns:Team .
+
+# Datatype properties
+ns:classification a owl:DatatypeProperty ;
+    rdfs:domain ns:Document ; rdfs:range xsd:string .
+ns:validFrom a owl:DatatypeProperty ;
+    rdfs:domain ns:DirectDocumentShare ; rdfs:range xsd:dateTime .
+ns:validUntil a owl:DatatypeProperty ;
+    rdfs:domain ns:DirectDocumentShare ; rdfs:range xsd:dateTime .
+ns:effectiveFrom a owl:DatatypeProperty ;
+    rdfs:domain ns:DocumentRestriction ; rdfs:range xsd:dateTime .

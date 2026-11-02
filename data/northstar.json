@@ -1,0 +1,52 @@
+{
+  "people": [
+    {"id":"Alice","name":"Alice"},{"id":"Bob","name":"Bob"},
+    {"id":"Charlie","name":"Charlie"},{"id":"Diana","name":"Diana"},
+    {"id":"Ethan","name":"Ethan"},{"id":"Farah","name":"Farah"}
+  ],
+  "teams": [
+    {"id":"Engineering","name":"Engineering"},{"id":"Platform","name":"Platform"},
+    {"id":"API","name":"API"},{"id":"Finance","name":"Finance"},{"id":"Security","name":"Security"}
+  ],
+  "team_memberships": [
+    {"person_id":"Alice","team_id":"API"},{"person_id":"Bob","team_id":"Engineering"},
+    {"person_id":"Charlie","team_id":"API"},{"person_id":"Diana","team_id":"Finance"},
+    {"person_id":"Ethan","team_id":"Security"},{"person_id":"Farah","team_id":"Platform"}
+  ],
+  "team_hierarchy": [
+    {"child_team_id":"Platform","parent_team_id":"Engineering"},
+    {"child_team_id":"API","parent_team_id":"Platform"}
+  ],
+  "projects": [
+    {"id":"Phoenix","name":"Phoenix","owning_team":"Engineering"},
+    {"id":"Orion","name":"Orion","owning_team":"Platform"},
+    {"id":"Ledger","name":"Ledger","owning_team":"Finance"},
+    {"id":"Sentinel","name":"Sentinel","owning_team":"Security"}
+  ],
+  "project_assignments": [
+    {"person_id":"Charlie","project_id":"Phoenix"},
+    {"person_id":"Ethan","project_id":"Phoenix"}
+  ],
+  "documents": [
+    {"id":"DOC-101","project_id":"Phoenix","classification":"Internal"},
+    {"id":"DOC-102","project_id":"Phoenix","classification":"Confidential"},
+    {"id":"DOC-103","project_id":"Orion","classification":"Internal"},
+    {"id":"DOC-104","project_id":"Ledger","classification":"Confidential"},
+    {"id":"DOC-105","project_id":"Sentinel","classification":"Internal"},
+    {"id":"DOC-106","project_id":"Phoenix","classification":"Internal"},
+    {"id":"DOC-107","project_id":"Orion","classification":"Confidential"}
+  ],
+  "clearances": [
+    {"person_id":"Alice","level":"Confidential"},{"person_id":"Bob","level":"Confidential"},
+    {"person_id":"Diana","level":"Confidential"},{"person_id":"Ethan","level":"Confidential"}
+  ],
+  "direct_shares": [
+    {"person_id":"Diana","document_id":"DOC-101","valid_from":"2026-10-20T00:00:00Z","valid_until":"2026-11-10T00:00:00Z"},
+    {"person_id":"Charlie","document_id":"DOC-102","valid_from":"2026-10-20T00:00:00Z","valid_until":"2026-11-15T00:00:00Z"},
+    {"person_id":"Farah","document_id":"DOC-104","valid_from":"2026-10-15T00:00:00Z","valid_until":"2026-11-05T00:00:00Z"},
+    {"person_id":"Ethan","document_id":"DOC-107","valid_from":"2026-10-20T00:00:00Z","valid_until":"2026-10-28T00:00:00Z"}
+  ],
+  "restrictions": [
+    {"person_id":"Alice","document_id":"DOC-102","effective_from":"2026-10-25T00:00:00Z","reason":"Specific security restriction"}
+  ]
+}
