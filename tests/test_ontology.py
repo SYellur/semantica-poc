@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from rdflib import Graph, Namespace, OWL, RDF, RDFS, XSD
+from rdflib import Graph, Namespace, OWL, RDF, RDFS, URIRef
 
 
 def test_northstar_ontology_parses_and_defines_temporal_association_properties():
@@ -12,5 +12,5 @@ def test_northstar_ontology_parses_and_defines_temporal_association_properties()
     assert (ns.DirectDocumentShare, RDF.type, OWL.Class) in graph
     assert (ns.DocumentRestriction, RDF.type, OWL.Class) in graph
     assert (ns.validFrom, RDF.type, OWL.DatatypeProperty) in graph
-    assert (ns.validUntil, RDFS.range, XSD.dateTime) in graph
+    assert (ns.validUntil, RDFS.range, URIRef('http://www.w3.org/2001/XMLSchema#dateTime')) in graph
     assert (ns.effectiveFrom, RDFS.range, XSD.dateTime) in graph
