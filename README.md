@@ -64,7 +64,7 @@ python -c "from northstar_authz.service import load_data; from northstar_authz.o
 pytest -q
 ```
 
-For candidate ontology changes, run `northstar_authz.ontology_diff.diff_ontologies(old, new)`, review mapper impact, update mapper and validator together, add regression tests, and require human approval before adopting the Turtle. See [validation](docs/ontology-validation.md), [ADR-002](docs/decisions/0002-sap-ai-core-and-temporal-ontology-contract.md), and the [ontology-migration Claude skill](.claude/skills/ontology-migration/SKILL.md).
+For candidate ontology changes, run `northstar_authz.ontology_diff.diff_ontologies(old, new)`, review mapper impact, update mapper and validator together, add regression tests, and require human approval before adopting the Turtle. See [validation](docs/ontology-validation.md), [ADR-002](docs/decisions/0002-sap-ai-core-and-temporal-ontology-contract.md), [ADR-003: structured-source ontology discovery](docs/decisions/0003-structured-source-ontology-discovery.md), and the [ontology-migration Claude skill](.claude/skills/ontology-migration/SKILL.md).
 
 ## Temporal support: current workaround and upstream requirement
 
