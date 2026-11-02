@@ -62,7 +62,10 @@ The Semantica path uses public documented APIs: `GraphBuilder`, `TemporalGraphQu
 │   └── semantica_pipeline.py
 ├── tests/
 │   ├── test_adapter.py
-│   └── test_policy.py
+│   ├── test_policy.py
+│   ├── test_ontology.py
+│   ├── test_ontology_generation.py
+│   └── test_semantica_pipeline.py
 ├── .github/workflows/tests.yml
 └── pyproject.toml
 ```
@@ -109,4 +112,4 @@ The implementation is based on the public Semantica documentation:
 - [Reasoning module](https://github.com/semantica-agi/semantica/blob/main/docs/reference/reasoning.md)
 - [Module overview](https://github.com/semantica-agi/semantica/blob/main/docs/modules.md)
 
-The exact runtime behaviour should be verified against the installed Semantica release. The CI tests focus on deterministic domain semantics and adapter transformation; they do not require an LLM provider.
+The CI suite covers domain policy, adapter integrity, ontology parsing, the Semantica KG/temporal/reasoning path, and ontology-prompt constraints. The integration tests do not require an LLM provider. The optional ontology proposal command does require provider credentials.
