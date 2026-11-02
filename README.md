@@ -108,6 +108,10 @@ The diagrams distinguish Semantica-provided capabilities from the Northstar-spec
 
 In the diagrams, **blue** denotes Semantica components, **amber** denotes Northstar-specific preparation, and **purple** denotes returned decisions.
 
+## Architecture decision records
+
+- [ADR-001: Keep ontology generation and KG mapping separate](docs/decisions/0001-ontology-generation-and-kg-mapping.md) — explains why the POC uses a reviewed ontology and an explicit adapter, with the trade-offs and conditions for a more dynamic mapping approach.
+
 ## References
 
 The implementation is based on the public Semantica documentation:
