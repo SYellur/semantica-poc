@@ -26,7 +26,24 @@ python -m northstar_authz --person Alice --as-of 2026-11-01T12:00:00Z
 
 The default CLI runs a deterministic reference evaluator, so no LLM key or model service is needed.
 
-To invoke the Semantica integration path from Python:
+## Guided notebooks
+
+The `notebooks/` folder contains three short walkthroughs. From the repository root, install Jupyter and launch it:
+
+```bash
+pip install jupyter
+jupyter notebook
+```
+
+Run the notebooks in this order:
+
+1. [01 — Data and ontology](notebooks/01_data_and_ontology.ipynb): load the Northstar JSON, inspect a document, read the curated Turtle ontology, and see the optional ontology-generation entry point.
+2. [02 — Knowledge graph](notebooks/02_knowledge_graph.ipynb): follow `load_data()` → `source_to_kg()` → Semantica `GraphBuilder`.
+3. [03 — Temporal reasoning and authorization](notebooks/03_temporal_reasoning_and_authorization.ipynb): inspect a temporal snapshot and run the Semantica-backed authorization path using `DatalogReasoner`, `Reasoner`, and `ExplanationGenerator`.
+
+The notebooks call the project's existing functions and classes rather than duplicating the implementation. Run them with the project environment active and from the repository root.
+
+## Semantica integration from Python
 
 ```python
 from datetime import datetime, timezone
@@ -53,7 +70,12 @@ The Semantica path uses public documented APIs: `GraphBuilder`, `TemporalGraphQu
 ├── docs/
 │   ├── architecture.md
 │   ├── sequence.md
-│   └── activity.md
+│   ├── activity.md
+│   └── decisions/
+├── notebooks/
+│   ├── 01_data_and_ontology.ipynb
+│   ├── 02_knowledge_graph.ipynb
+│   └── 03_temporal_reasoning_and_authorization.ipynb
 ├── ontology/northstar.ttl
 ├── northstar_authz/
 │   ├── adapter.py
@@ -61,11 +83,6 @@ The Semantica path uses public documented APIs: `GraphBuilder`, `TemporalGraphQu
 │   ├── service.py
 │   └── semantica_pipeline.py
 ├── tests/
-│   ├── test_adapter.py
-│   ├── test_policy.py
-│   ├── test_ontology.py
-│   ├── test_ontology_generation.py
-│   └── test_semantica_pipeline.py
 ├── .github/workflows/tests.yml
 └── pyproject.toml
 ```
