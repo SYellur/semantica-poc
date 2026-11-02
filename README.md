@@ -100,9 +100,13 @@ An optional proposal-generation script uses Semantica's native `LLMOntologyGener
 
 ## Diagrams
 
-- [High-level architecture](docs/architecture.md)
-- [Request sequence](docs/sequence.md)
-- [Authorization activity](docs/activity.md)
+The diagrams distinguish Semantica-provided capabilities from the Northstar-specific adapter and policy.
+
+- [High-level architecture](docs/architecture.md) — design-time ontology generation and runtime component map.
+- [Request sequence](docs/sequence.md) — which component is called, and in what order, for one access request.
+- [Authorization activity](docs/activity.md) — the decision flow from temporal snapshot through recursive reachability and policy evaluation.
+
+In the diagrams, **blue** denotes Semantica components, **amber** denotes Northstar-specific preparation, and **purple** denotes returned decisions.
 
 ## References
 
