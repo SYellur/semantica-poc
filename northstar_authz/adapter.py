@@ -45,6 +45,8 @@ def source_to_kg(data: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
         add_entity("Person", item["id"], name=item["name"])
     for item in data["teams"]:
         add_entity("Team", item["id"], name=item["name"])
+    for level in sorted({row["level"] for row in data["clearances"]}):
+        add_entity("ClearanceLevel", level, name=level)
     for item in data["projects"]:
         add_entity("Project", item["id"], name=item["name"])
         add_edge(item["owning_team"], item["id"], "OWNS_PROJECT")
